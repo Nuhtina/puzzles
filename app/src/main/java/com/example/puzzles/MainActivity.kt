@@ -1,14 +1,14 @@
 package com.example.puzzles
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
-import android.view.DragEvent
-import android.view.View
 import android.widget.Button
+import android.graphics.BitmapFactory
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -18,8 +18,9 @@ class MainActivity : AppCompatActivity() {
     private var puzzlePieces = mutableListOf<ImageView>()
     private val rows = 3
     private val cols = 3
-    private var pieceWidth = 0
-    private var pieceHeight = 0
+
+    // Храним выбранный кусочек для перемещения
+    private var selectedPiece: ImageView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,10 +29,8 @@ class MainActivity : AppCompatActivity() {
         puzzleContainer = findViewById(R.id.puzzleContainer)
         btnShuffle = findViewById(R.id.btnShuffle)
 
-        // Ждем когда layout будет готов для получения размеров
-        puzzleContainer.post {
-            createPuzzle()
-        }
+        // Создаем пазл сразу
+        createPuzzle()
 
         btnShuffle.setOnClickListener {
             shufflePuzzle()
@@ -42,15 +41,9 @@ class MainActivity : AppCompatActivity() {
         puzzleContainer.removeAllViews()
         puzzlePieces.clear()
 
-        // Создаем тестовое изображение (можно заменить на свою картинку)
         val originalBitmap = createTestBitmap()
 
-        pieceWidth = puzzleContainer.width / cols
-        pieceHeight = puzzleContainer.height / rows
-
-        val pieces = splitBitmap(originalBitmap)
-
-        // Создаем контейнеры для строк
+        // Создаем строки и столбцы для пазла
         for (i in 0 until rows) {
             val rowLayout = LinearLayout(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -64,29 +57,9 @@ class MainActivity : AppCompatActivity() {
 
             for (j in 0 until cols) {
                 val pieceIndex = i * cols + j
-                val pieceBitmap = pieces[pieceIndex]
+                val pieceBitmap = splitBitmap(originalBitmap, i, j)
 
-                val imageView = ImageView(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.MATCH_PARENT
-                    ).apply {
-                        weight = 1f
-                    }
-                    setImageBitmap(pieceBitmap)
-                    scaleType = ImageView.ScaleType.FIT_XY
-                    tag = pieceIndex // Сохраняем оригинальную позицию
-
-                    // Добавляем возможность перетаскивания
-                    setOnLongClickListener { view ->
-                        val shadowBuilder = View.DragShadowBuilder(view)
-                        view.startDragAndDrop(null, shadowBuilder, view, 0)
-                        true
-                    }
-
-                    setOnDragListener(dragListener)
-                }
-
+                val imageView = createPuzzlePiece(pieceBitmap, pieceIndex)
                 puzzlePieces.add(imageView)
                 rowLayout.addView(imageView)
             }
@@ -94,51 +67,59 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val dragListener = View.OnDragListener { view, event ->
-        when (event.action) {
-            DragEvent.ACTION_DRAG_STARTED -> {
-                view.alpha = 0.5f
-                true
+    private fun createPuzzlePiece(bitmap: Bitmap, index: Int): ImageView {
+        return ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                weight = 1f
             }
-            DragEvent.ACTION_DRAG_ENTERED -> {
-                view.setBackgroundColor(Color.LTGRAY)
-                true
-            }
-            DragEvent.ACTION_DRAG_EXITED -> {
-                view.setBackgroundColor(Color.TRANSPARENT)
-                true
-            }
-            DragEvent.ACTION_DROP -> {
-                view.setBackgroundColor(Color.TRANSPARENT)
+            setImageBitmap(bitmap)
+            scaleType = ImageView.ScaleType.FIT_XY
+            tag = index
 
-                val draggedView = event.localState as ImageView
-                val targetView = view as ImageView
+            // Добавляем отступы чтобы видеть границы
+            setPadding(4, 4, 4, 4)
+            setBackgroundColor(Color.DKGRAY)
 
-                // Меняем местами изображения
-                swapPieces(draggedView, targetView)
-
-                // Проверяем, собран ли пазл
-                checkPuzzleSolved()
-                true
+            // Простой клик для выбора и перемещения
+            setOnClickListener {
+                onPieceClicked(this)
             }
-            DragEvent.ACTION_DRAG_ENDED -> {
-                view.alpha = 1.0f
-                view.setBackgroundColor(Color.TRANSPARENT)
-                true
-            }
-            else -> false
         }
     }
 
-    private fun swapPieces(view1: ImageView, view2: ImageView) {
-        val tempDrawable = view1.drawable
-        val tempTag = view1.tag
+    private fun onPieceClicked(clickedPiece: ImageView) {
+        if (selectedPiece == null) {
+            // Первый клик - выбираем кусочек
+            selectedPiece = clickedPiece
+            clickedPiece.setBackgroundColor(Color.RED)
+            Toast.makeText(this, "Выбран кусочек ${clickedPiece.tag}. Кликни на другой чтобы поменять местами", Toast.LENGTH_SHORT).show()
+        } else {
+            // Второй клик - меняем местами
+            if (selectedPiece != clickedPiece) {
+                swapPieces(selectedPiece!!, clickedPiece)
+                selectedPiece?.setBackgroundColor(Color.DKGRAY)
+                selectedPiece = null
+                checkPuzzleSolved()
+            } else {
+                // Клик на тот же кусочек - отмена выбора
+                selectedPiece?.setBackgroundColor(Color.DKGRAY)
+                selectedPiece = null
+            }
+        }
+    }
 
-        view1.setImageDrawable(view2.drawable)
-        view1.tag = view2.tag
+    private fun swapPieces(piece1: ImageView, piece2: ImageView) {
+        val tempDrawable = piece1.drawable
+        val tempTag = piece1.tag
 
-        view2.setImageDrawable(tempDrawable)
-        view2.tag = tempTag
+        piece1.setImageDrawable(piece2.drawable)
+        piece1.tag = piece2.tag
+
+        piece2.setImageDrawable(tempDrawable)
+        piece2.tag = tempTag
     }
 
     private fun checkPuzzleSolved() {
@@ -151,34 +132,53 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (isSolved) {
-            // Пазл собран!
-            android.widget.Toast.makeText(this, "Пазл собран!", android.widget.Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "🎉 Пазл собран! Молодец!", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun shufflePuzzle() {
-        val indices = puzzlePieces.indices.toList().shuffled()
-
-        for (i in puzzlePieces.indices) {
-            puzzlePieces[i].tag = indices[i]
-            // Здесь нужно обновить изображения согласно новым позициям
-            // Для простоты просто перемешаем теги
+        // Просто меняем местами случайные кусочки 20 раз
+        repeat(20) {
+            val randomIndex1 = (0 until puzzlePieces.size).random()
+            val randomIndex2 = (0 until puzzlePieces.size).random()
+            if (randomIndex1 != randomIndex2) {
+                swapPieces(puzzlePieces[randomIndex1], puzzlePieces[randomIndex2])
+            }
         }
-
-        // Обновляем отображение
-        updatePuzzleDisplay()
-    }
-
-    private fun updatePuzzleDisplay() {
-        // В реальном приложении здесь нужно обновить изображения
-        // согласно их тегам (позициям)
+        Toast.makeText(this, "Пазл перемешан!", Toast.LENGTH_SHORT).show()
     }
 
     private fun createTestBitmap(): Bitmap {
-        // Создаем простой разноцветный bitmap для теста
-        val bitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
+        // Попробуй разные имена картинок по очереди
+        val imageResources = listOf(
+            R.drawable.puzzle_image11,
+            R.drawable.puzzle_image123
+            /*R.drawable.puzzle,*/
 
+        )
+
+        // Ищем первую доступную картинку
+        for (resId in imageResources) {
+            try {
+                val bitmap = BitmapFactory.decodeResource(resources, resId)
+                if (bitmap != null) {
+                    // Масштабируем до квадрата 600x600 для пазла
+                    return Bitmap.createScaledBitmap(bitmap, 600, 600, true)
+                }
+            } catch (e: Exception) {
+                // Пропускаем если картинка не найдена
+            }
+        }
+
+        // Если картинок нет - создаем разноцветный тест
+        return createColorfulTestBitmap()
+    }
+
+    private fun createColorfulTestBitmap(): Bitmap {
+        val bitmap = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Твой старый код с цветами как запасной вариант
         val colors = listOf(
             Color.RED, Color.BLUE, Color.GREEN,
             Color.YELLOW, Color.CYAN, Color.MAGENTA,
@@ -194,12 +194,26 @@ class MainActivity : AppCompatActivity() {
                     color = colors[i * cols + j]
                     style = android.graphics.Paint.Style.FILL
                 }
+
                 canvas.drawRect(
-                    j * sectionWidth.toFloat(),
-                    i * sectionHeight.toFloat(),
-                    (j + 1) * sectionWidth.toFloat(),
-                    (i + 1) * sectionHeight.toFloat(),
+                    j * sectionWidth.toFloat() + 5,
+                    i * sectionHeight.toFloat() + 5,
+                    (j + 1) * sectionWidth.toFloat() - 5,
+                    (i + 1) * sectionHeight.toFloat() - 5,
                     paint
+                )
+
+                val textPaint = android.graphics.Paint().apply {
+                    color = Color.BLACK
+                    textSize = 60f
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+                val number = (i * cols + j + 1).toString()
+                canvas.drawText(
+                    number,
+                    (j * sectionWidth + sectionWidth / 2).toFloat(),
+                    (i * sectionHeight + sectionHeight / 2).toFloat() + 20,
+                    textPaint
                 )
             }
         }
@@ -207,23 +221,16 @@ class MainActivity : AppCompatActivity() {
         return bitmap
     }
 
-    private fun splitBitmap(bitmap: Bitmap): List<Bitmap> {
-        val pieces = mutableListOf<Bitmap>()
+    private fun splitBitmap(bitmap: Bitmap, row: Int, col: Int): Bitmap {
         val pieceWidth = bitmap.width / cols
         val pieceHeight = bitmap.height / rows
 
-        for (i in 0 until rows) {
-            for (j in 0 until cols) {
-                val piece = Bitmap.createBitmap(
-                    bitmap,
-                    j * pieceWidth,
-                    i * pieceHeight,
-                    pieceWidth,
-                    pieceHeight
-                )
-                pieces.add(piece)
-            }
-        }
-        return pieces
+        return Bitmap.createBitmap(
+            bitmap,
+            col * pieceWidth,
+            row * pieceHeight,
+            pieceWidth,
+            pieceHeight
+        )
     }
 }
