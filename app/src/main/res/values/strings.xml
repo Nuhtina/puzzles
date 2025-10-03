@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Пазл Игра</string>
+    <string name="puzzle_title">Собери пазл</string>
+    <string name="shuffle_button">Перемешать</string>
+    <string name="pick_image">Выбрать картинку</string>
+    <string name="puzzle_solved">Пазл собран! Молодец!</string>
+</resources>
