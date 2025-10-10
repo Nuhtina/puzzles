@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         // Создаем первый пазл
         createPuzzle()
 
+
         btnShuffle.setOnClickListener {
             shufflePuzzle()
         }
