@@ -1,11 +1,11 @@
 package com.example.puzzles
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.Button
-import android.graphics.BitmapFactory
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -15,9 +15,19 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var puzzleContainer: LinearLayout
     private lateinit var btnShuffle: Button
+    private lateinit var btnNextPuzzle: Button
     private var puzzlePieces = mutableListOf<ImageView>()
-    private val rows = 3
-    private val cols = 3
+    private val rows = 4
+    private val cols = 4
+
+    // Список доступных картинок для пазлов
+    private val imageResources = listOf(
+        R.drawable.puzzle_image11,
+        R.drawable.puzzle_image123
+        // Добавь здесь другие картинки
+    )
+
+    private var currentPuzzleIndex = 0
 
     // Храним выбранный кусочек для перемещения
     private var selectedPiece: ImageView? = null
@@ -28,12 +38,17 @@ class MainActivity : AppCompatActivity() {
 
         puzzleContainer = findViewById(R.id.puzzleContainer)
         btnShuffle = findViewById(R.id.btnShuffle)
+        btnNextPuzzle = findViewById(R.id.Новый пазл)
 
-        // Создаем пазл сразу
+        // Создаем первый пазл
         createPuzzle()
 
         btnShuffle.setOnClickListener {
             shufflePuzzle()
+        }
+
+        btnNextPuzzle.setOnClickListener {
+            nextPuzzle()
         }
     }
 
@@ -65,6 +80,9 @@ class MainActivity : AppCompatActivity() {
             }
             puzzleContainer.addView(rowLayout)
         }
+
+        // Обновляем текст кнопки
+        updateNextButtonText()
     }
 
     private fun createPuzzlePiece(bitmap: Bitmap, index: Int): ImageView {
@@ -92,10 +110,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPieceClicked(clickedPiece: ImageView) {
         if (selectedPiece == null) {
-            // Первый клик - выбираем кусочек
+            // Первый клик - выбираем кусочек (без уведомления)
             selectedPiece = clickedPiece
             clickedPiece.setBackgroundColor(Color.RED)
-            Toast.makeText(this, "Выбран кусочек ${clickedPiece.tag}. Кликни на другой чтобы поменять местами", Toast.LENGTH_SHORT).show()
         } else {
             // Второй клик - меняем местами
             if (selectedPiece != clickedPiece) {
@@ -132,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (isSolved) {
-            Toast.makeText(this, "🎉 Пазл собран! Молодец!", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Пазл успешно собран!", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -148,25 +165,34 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Пазл перемешан!", Toast.LENGTH_SHORT).show()
     }
 
+    private fun nextPuzzle() {
+        // Переходим к следующему пазлу
+        currentPuzzleIndex = (currentPuzzleIndex + 1) % imageResources.size
+        createPuzzle()
+        Toast.makeText(this, "Новый пазл загружен!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateNextButtonText() {
+        val totalPuzzles = imageResources.size
+        val currentNumber = currentPuzzleIndex + 1
+        btnNextPuzzle.text = "Следующий пазл ($currentNumber/$totalPuzzles)"
+    }
+
     private fun createTestBitmap(): Bitmap {
-        // Попробуй разные имена картинок по очереди
-        val imageResources = listOf(
-            R.drawable.puzzle_image11,
-            R.drawable.puzzle_image123
-            /*R.drawable.puzzle,*/
+        // Берем текущую картинку из списка
+        val currentResId = imageResources[currentPuzzleIndex]
 
-        )
-
-        // Ищем первую доступную картинку
-        for (resId in imageResources) {
-            try {
-                val bitmap = BitmapFactory.decodeResource(resources, resId)
-                if (bitmap != null) {
-                    // Масштабируем до квадрата 600x600 для пазла
-                    return Bitmap.createScaledBitmap(bitmap, 600, 600, true)
-                }
-            } catch (e: Exception) {
-                // Пропускаем если картинка не найдена
+        try {
+            val bitmap = BitmapFactory.decodeResource(resources, currentResId)
+            if (bitmap != null) {
+                // Масштабируем до квадрата 600x600 для пазла
+                return Bitmap.createScaledBitmap(bitmap, 600, 600, true)
+            }
+        } catch (e: Exception) {
+            // Если картинка не найдена, переходим к следующей
+            currentPuzzleIndex = (currentPuzzleIndex + 1) % imageResources.size
+            if (currentPuzzleIndex != 0) { // Чтобы избежать бесконечного цикла
+                return createTestBitmap()
             }
         }
 
@@ -191,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until rows) {
             for (j in 0 until cols) {
                 val paint = android.graphics.Paint().apply {
-                    color = colors[i * cols + j]
+                    color = colors[(i * cols + j) % colors.size]
                     style = android.graphics.Paint.Style.FILL
                 }
 

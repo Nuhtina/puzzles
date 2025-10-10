@@ -35,11 +35,18 @@
 
     <Button
         android:id="@+id/btnShuffle"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Перемешать"
         android:layout_marginTop="16dp"
         android:backgroundTint="#2196F3"
+        android:text="Перемешать"
         android:textColor="#ffffff" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="134dp"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#19B6A5"
+        android:text="Главный экран" />
 
 </LinearLayout>
