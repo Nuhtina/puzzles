@@ -34,22 +34,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        try {
+            setContentView(R.layout.activity_main)
 
-        puzzleContainer = findViewById(R.id.puzzleContainer)
-        btnShuffle = findViewById(R.id.btnShuffle)
-        btnNextPuzzle = findViewById(R.id.Новый пазл)
+            puzzleContainer = findViewById(R.id.puzzleContainer)
+            btnShuffle = findViewById(R.id.btnShuffle)
+            btnNextPuzzle = findViewById(R.id.btnNextPuzzle) // Добавьте эту кнопку в XML!
 
-        // Создаем первый пазл
-        createPuzzle()
+            createPuzzle()
 
+            btnShuffle.setOnClickListener {
+                shufflePuzzle()
+            }
 
-        btnShuffle.setOnClickListener {
-            shufflePuzzle()
-        }
-
-        btnNextPuzzle.setOnClickListener {
-            nextPuzzle()
+            btnNextPuzzle.setOnClickListener {
+                nextPuzzle()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка инициализации: ${e.message}", Toast.LENGTH_LONG).show()
+            e.printStackTrace()
         }
     }
 
@@ -111,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPieceClicked(clickedPiece: ImageView) {
         if (selectedPiece == null) {
-            // Первый клик - выбираем кусочек (без уведомления)
+            // Первый клик - выбираем кусочек
             selectedPiece = clickedPiece
             clickedPiece.setBackgroundColor(Color.RED)
         } else {

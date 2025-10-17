@@ -3,50 +3,39 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#f0f0f0">
-
-    <TextView
-        android:id="@+id/tvLevel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Уровень: 1/3"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Пазл"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="16dp" />
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnShuffle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Перемешать" />
+
+        <Button
+            android:id="@+id/btnNextPuzzle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Следующий пазл" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/puzzleContainer"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:id="@+id/puzzleContainer"
-        android:background="#ffffff"
-        android:orientation="vertical" />
-
-    <Button
-        android:id="@+id/btnShuffle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:backgroundTint="#2196F3"
-        android:text="Перемешать"
-        android:textColor="#ffffff" />
-
-    <Button
-        android:id="@+id/button"
-        android:layout_width="134dp"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#19B6A5"
-        android:text="Главный экран" />
+        android:orientation="vertical"
+        android:background="#f0f0f0"
+        android:layout_marginTop="16dp" />
 
 </LinearLayout>
